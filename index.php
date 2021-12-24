@@ -1,7 +1,7 @@
 <?php
 
-    include 'includes/functions.php';
-    include 'includes/config.php';
+    include 'functions.php';
+    API_KEY = 'INSERT HERE'
 
     // TIMEZONE - NAIROBI, KENYA
     date_default_timezone_set('Africa/Nairobi');
