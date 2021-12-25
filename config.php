@@ -1,5 +1,5 @@
 <?php
-    $API_KEY = "5080289828:AAEq5SYKmiDqnjyMUdXS-YmwgZa3ePMy26Y";
+    $API_KEY = "...";
 
     // images
     $client_image = "https://wearegenerationshapers.co.ke/pandebot/images/pande.jpg";
