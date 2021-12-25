@@ -1,7 +1,8 @@
 <?php
 
-    include 'functions.php';
-    API_KEY = 'INSERT HERE'
+    include 'includes/functions.php';
+    include 'includes/config.php';
+    include '_datastream/replies.php';
 
     // TIMEZONE - NAIROBI, KENYA
     date_default_timezone_set('Africa/Nairobi');
@@ -15,187 +16,801 @@
     $chat_id = array();
     $first_name = array();
     $callback_query = array();
-    $callback_query_id = array();
-    $feedback = array();
 
     $chat_id = $update["message"]["chat"]["id"];
     $first_name = $update["message"]["chat"]["first_name"];
     $message = $update["message"]["text"];
     $callback_query = $update['callback_query'];
-    $callback_query_id = $update["callback_query"]["message"]["chat"]['id'];
-    $feedback = $update["data"];
+    $current_message_id = $update['callback_query']['message']['message_id'];
+    $reply_chat_id = $update["callback_query"]["from"]["id"];
+    $current_del_id = $update['message']['message_id']; 
+    $feedback = $update["callback_query"]["data"];
+    $phone_number = $update['message']['contact']['phone_number'];
 
-    if(strtok($message, ' ') === 'box' || strtok($message, ' ') === 'Box'){
+    if(isset($phone_number)){
+        $Res = "We have received your phone number  -   $phone_number\nThank you";
+        send_message($chat_id, $Res);
+    
+    } elseif(strtok($message, ' ') === 'box' || strtok($message, ' ') === 'Box'){
             $Res = "Thank you $first_name for your feedback";
         send_message($chat_id, $Res);
-    }
 
-    // switch for all the commands - don't worry about the long list
-    
+    } else {
+
+    // switch for all the commands 
     switch($message) {
         case '/help':  
             $encodedKeyboard = '';
-            $response = "To get help from me ".$first_name." you'll start by telling me a few things about you.\n\nDid you succesfully register as a voter?";
-                
-            inline_but($chat_id, $response, $encodedKeyboard);
-            
-            if($chat_id == $callback_query_id){
-                if ($feedback = 'Yes'){
-                    $response = "To get help from me ".$first_name." you'll start by telling me a few things about you.\n\nDid you succesfully register as a voter?";
-                    inline_but($chat_id, $response, $encodedKeyboard);
-                }
-            }
+                inline_but($chat_id, $help['1'], $encodedKeyboard);
         break;
 
         case '/suggestionbox':
-            $Res = "Thank you, if you have any direct suggestions for me feel free to send. Start suggestion with the word 'box' \n\n e.g. box call me back...\n e.g. box you should visit Homabay...\n\nhit /help if you need help navigating around.";
-            send_message($chat_id, $Res);
+            send_message($chat_id, $sugg[1]);
+        break;
+
+        case 'suggest':
+            send_message($chat_id, $sugg[1]);
+        break;
+
+        case 'suggestion':
+            send_message($chat_id, $sugg[1]);
+        break;
+
+        case 'suggestionbox':
+            send_message($chat_id, $sugg[1]);
         break;
 
         case '/contact':
-            $response = "\u{260E} Contact me today\nCall: +254797702066\nText: +254743048147";
             $encodedKeyboard = "";
-            inline_button($chat_id, $response, $encodedKeyboard);
+            inline_button($chat_id, $contact_reply['1'], $encodedKeyboard);
+        break;
+
+        case '/contact':
+            $encodedKeyboard = "";
+            inline_button($chat_id, $contact_reply['1'], $encodedKeyboard);
         break;
 
         case 'contact':
-            $response = "\u{260E} Contact me today\nCall: +254797702066\nText: +254743048147";
             $encodedKeyboard = "";
-            inline_button($chat_id, $response, $encodedKeyboard);
+            inline_button($chat_id, $contact_reply['1'], $encodedKeyboard);
         break;
 
         case 'phone':
-            $response = "\u{260E} Contact me today\nCall: +254797702066\nText: +254743048147";
             $encodedKeyboard = "";
-            inline_button($chat_id, $response, $encodedKeyboard);
+            inline_button($chat_id, $contact_reply['1'], $encodedKeyboard);
         break;
 
         case 'number':
-            $response = "\u{260E} Contact me today\nCall: +254797702066\nText: +254743048147";
             $encodedKeyboard = "";
-            inline_button($chat_id, $response, $encodedKeyboard);
+            inline_button($chat_id, $contact_reply['1'], $encodedKeyboard);
         break;
 
         case '/start':
-            sendPhoto($chat_id, new CURLFILE("https://wearegenerationshapers.co.ke/pandebot/images/pande.jpg"),"\u{1F44B} Hey there $first_name,\nAm Hon. Philip Pande - (Aspiring Senator - Kisumu County)\n\nThis bot is dedicated to take you through our journey together, fighting the right fight come 2022! \u{1F5F3}\n\nThis bot will help you discover my strong desire to bring it home to you, your dreams!\n\nClick /manifesto \u{1F4CB} to browse.\n\n\nHelpful tags\n\u{2665} Help - /help\n\u{1F4E0} Contacts - /contact\n\u{270A} Suggestions - /suggestionbox\n\nThank You.");
-                        
-            $logFile = "root/users.json";
-            $log = fopen($logFile, "a");
-            $str = json_encode($chat_id."=>".$first_name);
-            fwrite($log, $str);
-            fclose($log);
+            $filename = 'users.json';
+            writedata($filename, $chat_id, $first_name);
+            
+            $params = array('chat_id' => $chat_id, 
+                                'text' => 'loading...');
+            
+            $current_dell_id = ($current_del_id + 1);
+            
+            $deleteparams = array('chat_id' => $chat_id,
+                                    'message_id' => $current_dell_id);
+            bot('sendMessage', $params);
+            
+            bot('deleteMessage', $deleteparams);
+
+            sendPhoto($chat_id, new CURLFILE($client_image), $start_reply['1']);
         break;
 
         case 'start':
-            sendPhoto($chat_id, new CURLFILE("https://wearegenerationshapers.co.ke/pandebot/images/pande.jpg"),"\u{1F44B} Hey there $first_name,\nAm Hon. Philip Pande - (Aspiring Senator - Kisumu County)\n\nThis bot is dedicated to take you through our journey together, fighting the right fight come 2022! \u{1F5F3}\n\nThis bot will help you discover my strong desire to bring it home to you, your dreams!\n\nClick /manifesto \u{1F4CB} to browse.\n\n\nHelpful tags\n\u{2665} Help - /help\n\u{1F4E0} Contacts - /contact\n\u{270A} Suggestions - /suggestionbox\n\nThank You.");
-                        
-            $logFile = "root/users.json";
-            $log = fopen($logFile, "a");
-            $str = json_encode($chat_id."=>".$first_name);
-            fwrite($log, $str);
-            fclose($log);
+
+            $filename = 'users.json';
+            writedata($filename, $chat_id, $first_name);
+            
+            $params = array('chat_id' => $chat_id, 
+                                'text' => 'loading...');
+            
+            $current_dell_id = ($current_del_id + 1);
+            
+            $deleteparams = array('chat_id' => $chat_id,
+                                    'message_id' => $current_dell_id);
+            bot('sendMessage', $params);
+            
+            bot('deleteMessage', $deleteparams);
+
+            sendPhoto($chat_id, new CURLFILE($client_image), $start_reply['1']);
             break;
 
         case '/hi':
-            sendPhoto($chat_id, new CURLFILE("https://wearegenerationshapers.co.ke/pandebot/images/pande.jpg"),"\u{1F44B} Hey there $first_name,\nAm Hon. Philip Pande - (Aspiring Senator - Kisumu County)\n\nThis bot is dedicated to take you through our journey together, fighting the right fight come 2022! \u{1F5F3}\n\nThis bot will help you discover my strong desire to bring it home to you, your dreams!\n\nClick /manifesto \u{1F4CB} to browse.\n\n\nHelpful tags\n\u{2665} Help - /help\n\u{1F4E0} Contacts - /contact\n\u{270A} Suggestions - /suggestionbox\n\nThank You.");
-                        
-            $logFile = "root/users.json";
-            $log = fopen($logFile, "a");
-            $str = json_encode($chat_id."=>".$first_name);
-            fwrite($log, $str);
-            fclose($log);
+            $filename = 'users.json';
+            writedata($filename, $chat_id, $first_name);
+            
+            $params = array('chat_id' => $chat_id, 
+                                'text' => 'loading...');
+            
+            $current_dell_id = ($current_del_id + 1);
+            
+            $deleteparams = array('chat_id' => $chat_id,
+                                    'message_id' => $current_dell_id);
+            bot('sendMessage', $params);
+            
+            bot('deleteMessage', $deleteparams);
+
+            sendPhoto($chat_id, new CURLFILE($client_image), $start_reply['1']);
         break;
 
         case 'hey':
-            sendPhoto($chat_id, new CURLFILE("https://wearegenerationshapers.co.ke/pandebot/images/pande.jpg"),"\u{1F44B} Hey there $first_name,\nAm Hon. Philip Pande - (Aspiring Senator - Kisumu County)\n\nThis bot is dedicated to take you through our journey together, fighting the right fight come 2022! \u{1F5F3}\n\nThis bot will help you discover my strong desire to bring it home to you, your dreams!\n\nClick /manifesto \u{1F4CB} to browse.\n\n\nHelpful tags\n\u{2665} Help - /help\n\u{1F4E0} Contacts - /contact\n\u{270A} Suggestions - /suggestionbox\n\nThank You.");
-                        
-            $logFile = "root/users.json";
-            $log = fopen($logFile, "a");
-            $str = json_encode($chat_id."=>".$first_name);
-            fwrite($log, $str);
-            fclose($log);
+            $filename = 'users.json';
+            writedata($filename, $chat_id, $first_name);
             
+            $params = array('chat_id' => $chat_id, 
+                                'text' => 'loading...');
+            
+            $current_dell_id = ($current_del_id + 1);
+            
+            $deleteparams = array('chat_id' => $chat_id,
+                                    'message_id' => $current_dell_id);
+            bot('sendMessage', $params);
+
+            bot('deleteMessage', $deleteparams);
+
+            sendPhoto($chat_id, new CURLFILE($client_image), $start_reply['1']);
         break;
 
         case 'holla':
-            sendPhoto($chat_id, new CURLFILE("https://wearegenerationshapers.co.ke/pandebot/images/pande.jpg"),"\u{1F44B} Hey there $first_name,\nAm Hon. Philip Pande - (Aspiring Senator - Kisumu County)\n\nThis bot is dedicated to take you through our journey together, fighting the right fight come 2022! \u{1F5F3}\n\nThis bot will help you discover my strong desire to bring it home to you, your dreams!\n\nClick /manifesto \u{1F4CB} to browse.\n\n\nHelpful tags\n\u{2665} Help - /help\n\u{1F4E0} Contacts - /contact\n\u{270A} Suggestions - /suggestionbox\n\nThank You.");
-                        
-            $logFile = "root/users.json";
-            $log = fopen($logFile, "a");
-            $str = json_encode($chat_id."=>".$first_name);
-            fwrite($log, $str);
-            fclose($log);
+            $filename = 'users.json';
+            writedata($filename, $chat_id, $first_name);
+            
+            $params = array('chat_id' => $chat_id, 
+                                'text' => 'loading...');
+            
+            $current_dell_id = ($current_del_id + 1);
+            
+            $deleteparams = array('chat_id' => $chat_id,
+                                    'message_id' => $current_dell_id);
+            bot('sendMessage', $params);
+            
+            bot('deleteMessage', $deleteparams);
+
+            sendPhoto($chat_id, new CURLFILE($client_image), $start_reply['1']);
         break;
 
         case 'yow':
-            sendPhoto($chat_id, new CURLFILE("https://wearegenerationshapers.co.ke/pandebot/images/pande.jpg"),"\u{1F44B} Hey there $first_name,\nAm Hon. Philip Pande - (Aspiring Senator - Kisumu County)\n\nThis bot is dedicated to take you through our journey together, fighting the right fight come 2022! \u{1F5F3}\n\nThis bot will help you discover my strong desire to bring it home to you, your dreams!\n\nClick /manifesto \u{1F4CB} to browse.\n\n\nHelpful tags\n\u{2665} Help - /help\n\u{1F4E0} Contacts - /contact\n\u{270A} Suggestions - /suggestionbox\n\nThank You.");
-                        
-            $logFile = "root/users.json";
-            $log = fopen($logFile, "a");
-            $str = json_encode($chat_id."=>".$first_name);
-            fwrite($log, $str);
-            fclose($log);
+            $filename = 'users.json';
+            writedata($filename, $chat_id, $first_name);
+            
+            $params = array('chat_id' => $chat_id, 
+                                'text' => 'loading...');
+            
+            $current_dell_id = ($current_del_id + 1);
+            
+            $deleteparams = array('chat_id' => $chat_id,
+                                    'message_id' => $current_dell_id);
+            bot('sendMessage', $params);
+            
+            bot('deleteMessage', $deleteparams);
+
+            sendPhoto($chat_id, new CURLFILE($client_image), $start_reply['1']);
         break;
 
         case '/manifesto':
-            sendButton($chat_id, 'Haa! Okay, here are the major pillars of my manifesto', $encodedKeyboard);
+            // New send button Class
+            $obj = new NewButton;
+            $obj->keyboard = ['inline_keyboard' => [[['text' => '1. Inclusion', 'callback_data' => '1']],
+                                                    [['text' => '2. Participation', 'callback_data' => '2']],
+                                                    [['text' => '3. Paid County Internship for Youth', 'callback_data' => '3']],
+                                                    [['text' => '4. Senator\'s Center for devolution and leadership', 'callback_data' => '4']],
+                                                    [['text' => '5. Development fund focusing on Women and enterprises', 'callback_data' => '5']],
+                                                    [['text' => '6. Safeguarding contractors and Local SME\'s', 'callback_data' => '6']],
+                                                    [['text' => '7. National Transition Act', 'callback_data' => '7']],
+                                                    [['text' => '8. County Assembly Wards Revenue Allocation Formulae', 'callback_data' => '7']],
+                                                    [['text' => '9. Preserving County Government Autonomy', 'callback_data' => '7']],
+                                                    [['text' => '10. 30% contribution to Umbrella', 'callback_data' => '7']]
+                                                    ]];
+            // JSON encode keyboard 
+            $obj->encodedKeyboard = json_encode($obj->keyboard); 
+
+            $obj->Res = $manifesto;
+
+            $obj->parameters = array('chat_id' => $chat_id, 
+                                        'text' => $obj->Res, 
+                                        'reply_markup' => $obj->encodedKeyboard);
+            // send current message
+
+            $obj->bot('sendMessage', $obj->parameters);
+
         break;
 
         case 'manifesto':
-            sendButton($chat_id, 'Haa! Okay, here are the major pillars of my manifesto', $encodedKeyboard);
+            // New send button Class
+            $obj = new NewButton;
+            $obj->keyboard = ['inline_keyboard' => [[['text' => '1. Inclusion', 'callback_data' => '1']],
+                                                    [['text' => '2. Participation', 'callback_data' => '2']],
+                                                    [['text' => '3. Paid County Internship for Youth', 'callback_data' => '3']],
+                                                    [['text' => '4. Senator\'s Center for devolution and leadership', 'callback_data' => '4']],
+                                                    [['text' => '5. Development fund focusing on Women and enterprises', 'callback_data' => '5']],
+                                                    [['text' => '6. Safeguarding contractors and Local SME\'s', 'callback_data' => '6']],
+                                                    [['text' => '7. National Transition Act', 'callback_data' => '7']],
+                                                    [['text' => '8. County Assembly Wards Revenue Allocation Formulae', 'callback_data' => '7']],
+                                                    [['text' => '9. Preserving County Government Autonomy', 'callback_data' => '7']],
+                                                    [['text' => '10. 30% contribution to Umbrella', 'callback_data' => '7']]
+                                                    ]];
+            // JSON encode keyboard 
+            $obj->encodedKeyboard = json_encode($obj->keyboard); 
+
+            $obj->Res = $manifesto;
+
+            $obj->parameters = array('chat_id' => $chat_id, 
+                                        'text' => $obj->Res, 
+                                        'reply_markup' => $obj->encodedKeyboard);
+            // send current message
+            $obj->bot('sendMessage', $obj->parameters);
+
         break;
         
-        case 'Inclusion':
-            $rep = "1. Inclusion\n50% youth County Ministers\n(Incubate the next new leaders 2 male, 2 female, 1 person living with disability)";
-            sendButton($chat_id, $rep, $encodedKeyboard);
-        break;
-
-        case 'Participation':
-            $rep = "2. Participation\ni) Budget champions\nii) Government watch commitee\niii) Civic Partnerships\niv) Accountability report";
-            sendButton($chat_id, $rep, $encodedKeyboard);
-        break;
-
-        case 'Paid County Internship for Youth':
-            $rep = "3. Paid County Internship for Youth";
-            sendButton($chat_id, $rep, $encodedKeyboard);
-        break;
-
-        case 'Senator\'s Center for devolution and leadership':
-            $rep = "4. Senator's Center for devolution and leadership.\nOdinga-Mboya Centre for Mentorship & Leadership\nCoworking Civil Society and\nGovernance organization\nCommunity Whistle Blower Training & Protection Centre Youth Office";
-            sendButton($chat_id, $rep, $encodedKeyboard);    
-        break;
-
-        case 'Development fund focusing on Women and enterprises':
-            $rep = "5. Development fund focusing on Women and enterprises\nConditional allocation of funds to develop our disadvantaged population\ni) Youth Women & PWD Enterprises and LSO/LPO financing\nii) City of Kisumu Disability Enterprise Mainstreaming\niii) County Social Welfare Fund";
-            sendButton($chat_id, $rep, $encodedKeyboard);
-        break;
-
-        case 'Safeguarding contractors and Local SME\'s':
-            $rep = "6. Safeguarding contractors and Local SME's\nOffice of the controller of the budget timely disbursement of funds";
-            sendButton($chat_id, $rep, $encodedKeyboard);
-        break;
-
-        case 'National Transition Act':
-            $rep = "7. National Transition Act.\nAfter promulgation of the new constitution\nEnhanced inter-governmental relation and cooperation\nFull implementation of universal Health coverage\nImprove capacity to export goods to the rest of the world";
-            sendButton($chat_id, $rep, $encodedKeyboard);
-        break;
-
-        case 'County Assembly Wards Revenue Allocation Formulae':
-            $rep = "8. County Assembly Wards Revenue Allocation Formulae\nGrant assemblies autonomy to legislate and oversight county governments\nWard Development Fund\nWard Equaization Fund - framework to uplift rural and poor wards by connecting them to amenities like water, forests, parks and other endowments.";
-            sendButton($chat_id, $rep, $encodedKeyboard);
-        break;
-
-        case 'Preserving County Government Autonomy':
-            $rep = "9. Preserving County Government Autonomy\nInstitutionalization of Regional Blocs to develop regional identity to share common challenges and shared interests\nMake county budget and economic forum a semi-autonomous institution\nCounty Government Public-Private Partnership Bill\nAllow counties to self-guarantee financial instruments not more than three times their annual own source revenue";
-            sendButton($chat_id, $rep, $encodedKeyboard);
-        break;
-
-        case '30% contribution to Umbrella':
-            $rep = "10. 30% contribution to Umbrella\nMy office will provide the much-needed support for our little table banking and chama savings to grow them while acting as the Kisumu Cooperative Ambassador";
-            sendButton($chat_id, $rep, $encodedKeyboard);
-        break;
         default:
-            $Res = "Sorry, I don't understand you.\nKindly use the following commands\n\n/start or /hi\n/contact\n/suggestionbox\n/help\n";
-            send_message($chat_id, $Res);
+            send_message($chat_id, $unknown);
+}
 }
 
+// survey type response - feedback
+    switch($feedback){
+        case 'yes':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Nyanza', 'callback_data' => 'kisumu']],
+                                                        [['text' => 'Coast', 'callback_data' => 'nairobi']],
+                                                        [['text' => 'Western', 'callback_data' => 'western']],
+                                                        [['text' => 'N. Eastern', 'callback_data' => 'north']],
+                                                        [['text' => 'Eastern', 'callback_data' => 'eastern']],
+                                                        [['text' => 'Central', 'callback_data' => 'nairobi']],
+                                                        [['text' => 'Rift Valley', 'callback_data' => 'rift']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);                                        
+                $obj->deleteparams = array('chat_id' => $reply_chat_id,
+                                            'message_id' => $current_message_id);
+
+                $obj->Res = "Great! Which county do you live?";
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+                
+
+                // Delete previous message
+                $obj->bot('deleteMessage', $obj->deleteparams);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+            }
+        break;
+
+        case 'yet':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Nyanza', 'callback_data' => 'kisumu']],
+                                                        [['text' => 'Coast', 'callback_data' => 'nairobi']],
+                                                        [['text' => 'Western', 'callback_data' => 'western']],
+                                                        [['text' => 'N. Eastern', 'callback_data' => 'north']],
+                                                        [['text' => 'Eastern', 'callback_data' => 'eastern']],
+                                                        [['text' => 'Central', 'callback_data' => 'nairobi']],
+                                                        [['text' => 'Rift Valley', 'callback_data' => 'rift']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);                                        
+                $obj->deleteparams = array('chat_id' => $reply_chat_id,
+                                            'message_id' => $current_message_id);
+
+                $obj->Res = "Why not, please let me know if there are any issues sorrounding your voter registration, first let's me know a little about you, which county do you live?";
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+
+                // Delete previous message
+                $obj->bot('deleteMessage', $obj->deleteparams);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+
+        case 'kisumu':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Below 18', 'callback_data' => 'A']],
+                                                        [['text' => '18 - 28', 'callback_data' => 'B']],
+                                                        [['text' => '29 - 38', 'callback_data' => 'C']],
+                                                        [['text' => '39 - 48', 'callback_data' => 'D']],
+                                                        [['text' => '49 - 60', 'callback_data' => 'E']],
+                                                        [['text' => 'Above 60', 'callback_data' => 'F']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);                                        
+                $obj->deleteparams = array('chat_id' => $reply_chat_id,
+                                            'message_id' => $current_message_id);
+
+                $obj->Res = "Thank you for this information. What range best suits your age?";
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+
+                // Delete previous message
+                $obj->bot('deleteMessage', $obj->deleteparams);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+
+        case 'nairobi':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Below 18', 'callback_data' => 'A']],
+                                                        [['text' => '18 - 28', 'callback_data' => 'B']],
+                                                        [['text' => '29 - 38', 'callback_data' => 'C']],
+                                                        [['text' => '39 - 48', 'callback_data' => 'D']],
+                                                        [['text' => '49 - 60', 'callback_data' => 'E']],
+                                                        [['text' => 'Above 60', 'callback_data' => 'F']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);                                        
+                $obj->deleteparams = array('chat_id' => $reply_chat_id,
+                                            'message_id' => $current_message_id);
+
+                $obj->Res = "Thank you for this information. What range best suits your age?";
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+
+                // Delete previous message
+                $obj->bot('deleteMessage', $obj->deleteparams);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+
+        case 'western':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Below 18', 'callback_data' => 'A']],
+                                                        [['text' => '18 - 28', 'callback_data' => 'B']],
+                                                        [['text' => '29 - 38', 'callback_data' => 'C']],
+                                                        [['text' => '39 - 48', 'callback_data' => 'D']],
+                                                        [['text' => '49 - 60', 'callback_data' => 'E']],
+                                                        [['text' => 'Above 60', 'callback_data' => 'F']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);                                        
+                $obj->deleteparams = array('chat_id' => $reply_chat_id,
+                                            'message_id' => $current_message_id);
+
+                $obj->Res = "Thank you for this information. What range best suits your age?";
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+
+                // Delete previous message
+                $obj->bot('deleteMessage', $obj->deleteparams);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+
+        case 'north':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Below 18', 'callback_data' => 'A']],
+                                                        [['text' => '18 - 28', 'callback_data' => 'B']],
+                                                        [['text' => '29 - 38', 'callback_data' => 'C']],
+                                                        [['text' => '39 - 48', 'callback_data' => 'D']],
+                                                        [['text' => '49 - 60', 'callback_data' => 'E']],
+                                                        [['text' => 'Above 60', 'callback_data' => 'F']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);                                        
+                $obj->deleteparams = array('chat_id' => $reply_chat_id,
+                                            'message_id' => $current_message_id);
+
+                $obj->Res = "Thank you for this information. What range best suits your age?";
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+
+                // Delete previous message
+                $obj->bot('deleteMessage', $obj->deleteparams);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+
+        case 'eastern':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Below 18', 'callback_data' => 'A']],
+                                                        [['text' => '18 - 28', 'callback_data' => 'B']],
+                                                        [['text' => '29 - 38', 'callback_data' => 'C']],
+                                                        [['text' => '39 - 48', 'callback_data' => 'D']],
+                                                        [['text' => '49 - 60', 'callback_data' => 'E']],
+                                                        [['text' => 'Above 60', 'callback_data' => 'F']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);                                        
+                $obj->deleteparams = array('chat_id' => $reply_chat_id,
+                                            'message_id' => $current_message_id);
+
+                $obj->Res = "Thank you for this information. What range best suits your age?";
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+
+                // Delete previous message
+                $obj->bot('deleteMessage', $obj->deleteparams);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+
+        case 'nairobi':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Below 18', 'callback_data' => 'A']],
+                                                        [['text' => '18 - 28', 'callback_data' => 'B']],
+                                                        [['text' => '29 - 38', 'callback_data' => 'C']],
+                                                        [['text' => '39 - 48', 'callback_data' => 'D']],
+                                                        [['text' => '49 - 60', 'callback_data' => 'E']],
+                                                        [['text' => 'Above 60', 'callback_data' => 'F']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);                                        
+                $obj->deleteparams = array('chat_id' => $reply_chat_id,
+                                            'message_id' => $current_message_id);
+
+                $obj->Res = "Thank you for this information. What range best suits your age?";
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+
+                // Delete previous message
+                $obj->bot('deleteMessage', $obj->deleteparams);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+
+        case 'first':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Below 18', 'callback_data' => 'A']],
+                                                        [['text' => '18 - 28', 'callback_data' => 'B']],
+                                                        [['text' => '29 - 38', 'callback_data' => 'C']],
+                                                        [['text' => '39 - 48', 'callback_data' => 'D']],
+                                                        [['text' => '49 - 60', 'callback_data' => 'E']],
+                                                        [['text' => 'Above 60', 'callback_data' => 'F']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);                                        
+                $obj->deleteparams = array('chat_id' => $reply_chat_id,
+                                            'message_id' => $current_message_id);
+
+                $obj->Res = "Thank you for this information. What range best suits your age?";
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+                // Delete previous message
+                $obj->bot('deleteMessage', $obj->deleteparams);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+
+        case 'A':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = array(
+                    "keyboard" => array(array(
+                    array(
+                    "text" => "contact",
+                    "request_contact" => true // This is OPTIONAL telegram button
+                    
+                    ),
+                    )),
+                    "one_time_keyboard" => false, // Can be FALSE (hide keyboard after click)
+                    "resize_keyboard" => true // Can be FALSE (vertical resize)
+                );
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);                                        
+                $obj->deleteparams = array('chat_id' => $reply_chat_id,
+                                            'message_id' => $current_message_id);
+
+                $obj->Res = "Thank you, please share your phone number.\nWe will ensure you get personal help, calls or texts from us only come from +254743048147.";
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+                // Delete previous message
+                $obj->bot('deleteMessage', $obj->deleteparams);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+        case '1':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Back to Main Menu', 'callback_data' => 'main_menu']],
+                                                        [['text' => 'Visit site', 'callback_data' => 'site_click_google', 'url' => 'www.google.com']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);
+
+                $obj->Res = $manifestos['1'];
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+                // send photo
+                $obj->sendPhoto($reply_chat_id, new CURLFILE($inclusion), '1. Inclusion');
+                sleep(2);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+        case '2':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Back to Main Menu', 'callback_data' => 'main_menu']],
+                                                        [['text' => 'Visit site', 'callback_data' => 'site_click_google', 'url' => 'www.google.com']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);
+
+                $obj->Res = $manifestos['2'];
+
+                $param = array('chat_id' => $reply_chat_id, 
+                                'text' => $obj->Res);
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $manifestos['11'], 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+                // send photo
+                $obj->sendPhoto($reply_chat_id, new CURLFILE($participation), '2. Participation');
+                sleep(2);
+                // send two messages
+                $obj->bot('sendMessage', $param);
+                sleep(3);
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+        case '3':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Back to Main Menu', 'callback_data' => 'main_menu']],
+                                                        [['text' => 'Visit site', 'callback_data' => 'site_click_google', 'url' => 'www.google.com']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);
+
+                $obj->Res = $manifestos['3'];
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+                 // send photo
+                 $obj->sendPhoto($reply_chat_id, new CURLFILE($youths), '3. Paid County Internship for the Youth');
+                 sleep(2);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+        case '4':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Back to Main Menu', 'callback_data' => 'main_menu']],
+                                                        [['text' => 'Visit site', 'callback_data' => 'site_click_google', 'url' => 'www.google.com']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);
+                
+                $obj->Res = $manifestos['4'];
+
+                $param = array('chat_id' => $reply_chat_id, 
+                                'text' => $obj->Res);
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $manifestos['41'], 
+                                            'reply_markup' => $obj->encodedKeyboard);
+                // send photo
+                $obj->sendPhoto($reply_chat_id, new CURLFILE($leadership), "4. Senator’s Office as Centre for Leadership, Mentorship");
+                sleep(2);
+                // send two messages
+                $obj->bot('sendMessage', $param);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+        case '5':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Back to Main Menu', 'callback_data' => 'main_menu']],
+                                                        [['text' => 'Visit site', 'callback_data' => 'site_click_google', 'url' => 'www.google.com']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);
+
+                $obj->Res = $manifestos['5'];
+
+                $param = array('chat_id' => $reply_chat_id, 
+                                'text' => $obj->Res);
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $manifestos['51'], 
+                                            'reply_markup' => $obj->encodedKeyboard);
+                // send photo
+                $obj->sendPhoto($reply_chat_id, new CURLFILE($women), "5. County Youth Women, PWD and Special Population Development Fund");
+                sleep(2);
+                $obj->bot('sendMessage', $param);
+                sleep(3);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+        case '6':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Back to Main Menu', 'callback_data' => 'main_menu']],
+                                                        [['text' => 'Visit site', 'callback_data' => 'site_click_google', 'url' => 'www.google.com']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);
+
+                $obj->Res = $manifestos['6'];
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+        case '7':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Back to Main Menu', 'callback_data' => 'main_menu']],
+                                                        [['text' => 'Visit site', 'callback_data' => 'site_click_google', 'url' => 'www.google.com']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);
+
+                $obj->Res = $manifestos['7'];
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+        case '8':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Back to Main Menu', 'callback_data' => 'main_menu']],
+                                                        [['text' => 'Visit site', 'callback_data' => 'site_click_google', 'url' => 'www.google.com']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);
+
+                $obj->Res = $manifestos['8'];
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+        case '9':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Back to Main Menu', 'callback_data' => 'main_menu']],
+                                                        [['text' => 'Visit site', 'callback_data' => 'site_click_google', 'url' => 'www.google.com']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);
+
+                $obj->Res = $manifestos['9'];
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+        case '10':
+            if ($callback_query == true){
+                // New send button Class
+                $obj = new NewButton;
+                $obj->keyboard = ['inline_keyboard' => [[['text' => 'Back to Main Menu', 'callback_data' => 'main_menu']],
+                                                        [['text' => 'Visit site', 'callback_data' => 'site_click_google', 'url' => 'www.google.com']]
+                                                        ]];
+                // JSON encode keyboard 
+                $obj->encodedKeyboard = json_encode($obj->keyboard);                                        
+                $obj->deleteparams = array('chat_id' => $reply_chat_id,
+                                            'message_id' => $current_message_id);
+
+                $obj->Res = $manifestos['10'];
+
+                $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                            'text' => $obj->Res, 
+                                            'reply_markup' => $obj->encodedKeyboard);
+
+
+                // Delete previous message
+                $obj->bot('deleteMessage', $obj->deleteparams);
+                // send current message
+                $obj->bot('sendMessage', $obj->parameters);
+        break;
+    }
+
+    case 'main_menu':
+        if ($callback_query == true){
+           // New send button Class
+           $obj = new NewButton;
+           $obj->keyboard = ['inline_keyboard' => [[['text' => '1. Inclusion', 'callback_data' => '1']],
+                                                   [['text' => '2. Participation', 'callback_data' => '2']],
+                                                   [['text' => '3. Paid County Internship for Youth', 'callback_data' => '3']],
+                                                   [['text' => '4. Senator\'s Center for devolution and leadership', 'callback_data' => '4']],
+                                                   [['text' => '5. Development fund focusing on Women and enterprises', 'callback_data' => '5']],
+                                                   [['text' => '6. Safeguarding contractors and Local SME\'s', 'callback_data' => '6']],
+                                                   [['text' => '7. National Transition Act', 'callback_data' => '7']],
+                                                   [['text' => '8. County Assembly Wards Revenue Allocation Formulae', 'callback_data' => '7']],
+                                                   [['text' => '9. Preserving County Government Autonomy', 'callback_data' => '7']],
+                                                   [['text' => '10. 30% contribution to Umbrella', 'callback_data' => '7']]
+                                                   ]];
+           // JSON encode keyboard 
+           $obj->encodedKeyboard = json_encode($obj->keyboard); 
+
+           $obj->parameters = array('chat_id' => $reply_chat_id, 
+                                       'text' => 'Welcome back, here is the main menu again', 
+                                       'reply_markup' => $obj->encodedKeyboard);
+           // send current message
+            $obj->bot('sendMessage', $obj->parameters);
+    break;
+    }
+}
