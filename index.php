@@ -1,8 +1,8 @@
 <?php
 
-    include 'includes/functions.php';
-    include 'includes/config.php';
-    include '_datastream/replies.php';
+    include 'functions.php';
+    include 'config.php';
+    include 'replies.php';
 
     // TIMEZONE - NAIROBI, KENYA
     date_default_timezone_set('Africa/Nairobi');
